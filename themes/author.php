@@ -69,7 +69,7 @@ Bio: <?php echo $thisauthor->description; ?><br />
    <ul>
 <? foreach ($comments_array as $comment):
 setup_postdata($comment);
-echo "<li><a href='". $comment['url'] ."'>Comment on ". $comment['post_title'] ."</a></li>"; 
+echo "<li><a href='". $comment['url'] ."'>Comment on ". $comment['post_title'] ."</a> (" . date('M d, Y', strtotime($comment['comment_date'])) . ")</li>";
 endforeach; ?>
 </ul>
 <? endif; ?>

@@ -2,8 +2,22 @@
 /*
 Plugin Name: Participants Widget
 Description: A widget which displays blog participant info - number of posts and comments, and links to profile page
-Author: Jonah Bossewitch, CCNMTL 
-Licence: GPL3, GNU Public Licence,  http://www.gnu.org/copyleft/gpl.html
+Author: Jonah Bossewitch <jonah at ccnmtl dot columbia.edu, CCNMTL 
+Licence: GPL2, GNU Public Licence,  http://www.gnu.org/copyleft/gpl.html
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License, version 2, as 
+    published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
 */
 
 /**
@@ -25,7 +39,7 @@ function participants_get_comments_by_user($user_id, $limit = 0) {
   global $wpdb;
   
   $querystr = "
-    SELECT comment_ID, comment_post_ID, post_title
+    SELECT comment_ID, comment_post_ID, comment_date, post_title
     FROM $wpdb->comments, $wpdb->posts
     WHERE user_id = $user_id
     AND comment_post_id = ID
@@ -41,7 +55,7 @@ function participants_get_comments_by_user($user_id, $limit = 0) {
 
  // setup the url to the comment, for convinience
  foreach ($comments_array as &$comment) {
-   $comment['url'] = get_bloginfo('url') ."/?p=".$comment['comment_post_ID']."/#comment-". $comment['comment_ID'];;
+   $comment['url'] = get_bloginfo('url') ."/?p=".$comment['comment_post_ID']."/#comment-". $comment['comment_ID'];
  }
 
  return $comments_array;
@@ -220,6 +234,35 @@ function author_archive_view () {
   exit;
 }
 
+// create a bulk csv view of all posts/comments
+function participants_report () {
+
+  // return if this URL does not contain with "/participants_report"
+  $re = '/\/participants_report(.*)$/';
+  if (!preg_match( $re, $_SERVER["REQUEST_URI"])) {
+    return;
+  }
+
+  global $wp_query;
+  if (isset($wp_query->query_vars['author'])) {
+      query_posts("&nopaging=true&author_name=".$wp_query->query_vars['author']);
+    }
+  // print (TEMPLATEPATH);
+
+  // make this page open in excel
+  $site_url = site_url();
+  $blog_shortname = substr($site_url, strrpos($site_url, '/') + 1);
+  $filename = "${blog_shortname}_participants_report.csv";
+  
+  header("Content-type: application/csv", true, 200);
+  header("Content-Disposition: attachement; filename=$filename");
+  header("Pragma: no-cache");
+  header("Expires: 0");
+  
+  include(WP_PLUGIN_DIR . '/participants-widget/participants_report.php');
+  exit;
+}
+
 
 function wp_widget_participants($args) {
     //global $wpdb, $comments, $comment;
@@ -273,6 +316,9 @@ function wp_widget_participants_init() {
   
   // create a view that preserves the author's archive page view (posts and teasers)
   add_action('template_redirect', 'author_archive_view');
+
+  // create a view for the participants report
+  add_action('template_redirect', 'participants_report');
   
 }
 
